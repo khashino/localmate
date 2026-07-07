@@ -11,6 +11,8 @@ import { SettingsView } from "../components/views/SettingsView";
 import { HomeView } from "../components/views/HomeView";
 import { TranslatorView } from "../components/views/TranslatorView";
 import { PromptsView } from "../components/views/PromptsView";
+import { ModelProfilesView } from "../components/views/ModelProfilesView";
+import { VoiceView } from "../components/views/VoiceView";
 import { checkLlamaServer } from "../lib/llamaClient";
 import { getAppSetting, setAppSetting } from "../lib/tauriCommands";
 import { registerLocalMateShortcut } from "../lib/globalShortcut";
@@ -53,6 +55,14 @@ const viewTitles: Record<ViewKey, { title: string; subtitle: string }> = {
   prompts: {
     title: "Prompts",
     subtitle: "Create, edit, search, import, and export reusable prompts.",
+  },
+  models: {
+    title: "Model Profiles",
+    subtitle: "Create, activate, and restart different local GGUF model profiles.",
+  },
+  voice: {
+    title: "Voice Notes",
+    subtitle: "Dictate, clean, summarize, and extract action items from notes.",
   },
   settings: {
     title: "Settings",
@@ -118,6 +128,10 @@ export function LocalMateApp() {
         return <TranslatorView serverOnline={serverOnline} />;
       case "prompts":
         return <PromptsView />;
+      case "models":
+        return <ModelProfilesView />;
+      case "voice":
+        return <VoiceView serverOnline={serverOnline} />;
       case "settings":
         return (
           <SettingsView

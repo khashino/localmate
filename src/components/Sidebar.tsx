@@ -1,5 +1,6 @@
 import {
   Bot,
+  Boxes,
   Code2,
   FileText,
   Home,
@@ -22,6 +23,8 @@ export type ViewKey =
   | "automations"
   | "translator"
   | "prompts"
+  | "models"
+  | "voice"
   | "settings";
 
 type SidebarProps = {
@@ -61,7 +64,7 @@ const navItems: {
   },
   {
     key: "meetings",
-    label: "Meetings",
+    label: "Meet",
     icon: Mic,
   },
   {
@@ -71,13 +74,23 @@ const navItems: {
   },
   {
     key: "translator",
-    label: "Translate",
+    label: "Trans",
     icon: Languages,
   },
   {
     key: "prompts",
     label: "Prompts",
     icon: Library,
+  },
+  {
+    key: "models",
+    label: "Models",
+    icon: Boxes,
+  },
+  {
+    key: "voice",
+    label: "Voice",
+    icon: Mic,
   },
   {
     key: "settings",

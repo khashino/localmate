@@ -1087,3 +1087,18 @@ select option {
   color: var(--accent);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
+
+.nav {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nav-item {
+  min-height: 50px;
+  padding: 7px 4px;
+  font-size: 10px;
+}
+
+.nav-item svg {
+  width: 14px;
+  height: 14px;
+}
