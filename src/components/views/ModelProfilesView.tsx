@@ -135,7 +135,12 @@ export function ModelProfilesView() {
       <div className="split-workspace">
         <div className="panel">
           <div className="panel-header">
-            <h2>Model profiles</h2>
+            <h2>Runtime</h2>
+          </div>
+
+          <div className="terminal-box">
+            Runtime is now the only place for llama-server path, GGUF model path,
+            context size, GPU layers, embeddings, activate, and restart.
           </div>
 
           <button className="primary-button" onClick={newFromCurrent}>

@@ -23,7 +23,7 @@ export type ViewKey =
   | "automations"
   | "translator"
   | "prompts"
-  | "models"
+  | "runtime"
   | "voice"
   | "settings";
 
@@ -83,8 +83,8 @@ const navItems: {
     icon: Library,
   },
   {
-    key: "models",
-    label: "Models",
+    key: "runtime",
+    label: "Runtime",
     icon: Boxes,
   },
   {

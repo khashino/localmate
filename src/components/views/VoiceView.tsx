@@ -1,136 +1,44 @@
-import { useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { askLocalMate } from "../../lib/llamaClient";
+import { getAppSetting, setAppSetting } from "../../lib/tauriCommands";
 import { TaskLayout } from "./TaskLayout";
 
 type VoiceViewProps = {
   serverOnline: boolean;
 };
 
-type SpeechRecognitionLike = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((event: { error?: string }) => void) | null;
-  onend: (() => void) | null;
-};
-
-type SpeechRecognitionEventLike = {
-  results: {
-    length: number;
-    [index: number]: {
-      isFinal: boolean;
-      [index: number]: {
-        transcript: string;
-      };
-    };
-  };
-};
-
-declare global {
-  interface Window {
-    SpeechRecognition?: new () => SpeechRecognitionLike;
-    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-  }
-}
-
-const languageOptions = [
-  { label: "English", value: "en-US" },
-  { label: "Persian", value: "fa-IR" },
-  { label: "Arabic", value: "ar-SA" },
-  { label: "Turkish", value: "tr-TR" },
-  { label: "German", value: "de-DE" },
-  { label: "French", value: "fr-FR" },
-  { label: "Spanish", value: "es-ES" },
-];
-
 export function VoiceView({ serverOnline }: VoiceViewProps) {
-  const [language, setLanguage] = useState("en-US");
   const [transcript, setTranscript] = useState("");
-  const [interimText, setInterimText] = useState("");
   const [result, setResult] = useState("");
-  const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [log, setLog] = useState("Use speech recognition if your WebView supports it, or paste notes manually.");
+  const [whisperPath, setWhisperPath] = useState("");
+  const [whisperModelPath, setWhisperModelPath] = useState("");
+  const [log, setLog] = useState(
+    "Paste a transcript or use an external local Whisper tool, then clean/summarize with LocalMate."
+  );
 
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-
-  const recognitionSupported = useMemo(() => {
-    return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
-  }, []);
-
-  function startListening() {
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!Recognition) {
-      setLog("Speech recognition is not supported in this WebView. Paste your transcript manually.");
-      return;
-    }
-
-    const recognition = new Recognition();
-
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = language;
-
-    recognition.onresult = (event) => {
-      let finalText = "";
-      let interim = "";
-
-      for (let index = 0; index < event.results.length; index += 1) {
-        const item = event.results[index];
-        const text = item[0]?.transcript ?? "";
-
-        if (item.isFinal) {
-          finalText += text + " ";
-        } else {
-          interim += text;
-        }
-      }
-
-      if (finalText.trim()) {
-        setTranscript((prev) => `${prev} ${finalText}`.trim());
-      }
-
-      setInterimText(interim);
-    };
-
-    recognition.onerror = (event) => {
-      setLog(`Speech recognition error: ${event.error || "unknown error"}`);
-      setListening(false);
-    };
-
-    recognition.onend = () => {
-      setListening(false);
-      setInterimText("");
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
-    setLog("Listening...");
+  async function loadWhisperSettings() {
+    setWhisperPath((await getAppSetting("whisper_path")) || "");
+    setWhisperModelPath((await getAppSetting("whisper_model_path")) || "");
+    setLog("Whisper settings loaded.");
   }
 
-  function stopListening() {
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    setListening(false);
-    setInterimText("");
-    setLog("Stopped listening.");
+  async function saveWhisperSettings() {
+    await setAppSetting("whisper_path", whisperPath);
+    await setAppSetting("whisper_model_path", whisperModelPath);
+    setLog("Whisper settings saved. Local recording/transcription backend can be added next.");
   }
 
   async function runVoiceTask(task: "clean" | "summary" | "tasks") {
     const cleanTranscript = transcript.trim();
 
     if (!cleanTranscript) {
-      setResult("Add or dictate transcript text first.");
+      setResult("Paste transcript text first.");
       return;
     }
 
     if (!serverOnline) {
-      setResult("Model server is offline. Start llama-server first.");
+      setResult("Model server is offline. Start Runtime first.");
       return;
     }
 
@@ -182,63 +90,18 @@ ${cleanTranscript}`,
             <h2>Voice notes</h2>
           </div>
 
-          <label className="field-label">
-            Speech language
-            <select value={language} onChange={(event) => setLanguage(event.target.value)}>
-              {languageOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <div className="button-row">
-            <button
-              type="button"
-              className="primary-button"
-              onClick={startListening}
-              disabled={listening || !recognitionSupported}
-            >
-              Start listening
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={stopListening}
-              disabled={!listening}
-            >
-              Stop
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                setTranscript("");
-                setInterimText("");
-                setResult("");
-              }}
-            >
-              Clear
-            </button>
+          <div className="terminal-box">
+            Browser speech recognition is not reliable inside Linux Tauri WebView.
+            Use local Whisper outside the app for now, paste the transcript here,
+            then let LocalMate clean, summarize, or extract tasks.
           </div>
-
-          {!recognitionSupported && (
-            <div className="terminal-box">
-              Speech recognition is not available in this WebView. You can still paste a transcript manually.
-            </div>
-          )}
 
           <textarea
             className="large-input"
             value={transcript}
-            placeholder="Dictated or pasted transcript..."
+            placeholder="Paste transcript here..."
             onChange={(event) => setTranscript(event.target.value)}
           />
-
-          {interimText && <div className="terminal-box">Live: {interimText}</div>}
 
           <div className="button-row">
             <button
@@ -266,6 +129,57 @@ ${cleanTranscript}`,
               onClick={() => runVoiceTask("tasks")}
             >
               Action items
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => {
+                setTranscript("");
+                setResult("");
+              }}
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="panel-header">
+            <h2>Local Whisper settings</h2>
+          </div>
+
+          <label className="field-label">
+            whisper.cpp executable path
+            <input
+              value={whisperPath}
+              placeholder="/path/to/whisper-cli"
+              onChange={(event) => setWhisperPath(event.target.value)}
+            />
+          </label>
+
+          <label className="field-label">
+            Whisper model path
+            <input
+              value={whisperModelPath}
+              placeholder="/path/to/ggml-model.bin"
+              onChange={(event) => setWhisperModelPath(event.target.value)}
+            />
+          </label>
+
+          <div className="button-row">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={loadWhisperSettings}
+            >
+              Load
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={saveWhisperSettings}
+            >
+              Save
             </button>
           </div>
 

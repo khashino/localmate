@@ -1102,3 +1102,30 @@ select option {
   width: 14px;
   height: 14px;
 }
+
+.settings-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: var(--panel);
+  display: grid;
+  gap: 6px;
+}
+
+.settings-card strong {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.settings-card span {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.muted-text {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}

@@ -56,9 +56,9 @@ const viewTitles: Record<ViewKey, { title: string; subtitle: string }> = {
     title: "Prompts",
     subtitle: "Create, edit, search, import, and export reusable prompts.",
   },
-  models: {
-    title: "Model Profiles",
-    subtitle: "Create, activate, and restart different local GGUF model profiles.",
+  runtime: {
+    title: "Runtime",
+    subtitle: "Control local llama.cpp runtime, model profiles, and server restarts.",
   },
   voice: {
     title: "Voice Notes",
@@ -128,7 +128,7 @@ export function LocalMateApp() {
         return <TranslatorView serverOnline={serverOnline} />;
       case "prompts":
         return <PromptsView />;
-      case "models":
+      case "runtime":
         return <ModelProfilesView />;
       case "voice":
         return <VoiceView serverOnline={serverOnline} />;
