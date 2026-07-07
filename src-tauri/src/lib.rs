@@ -961,7 +961,7 @@ fn restore_bubble_position(app: &AppHandle) -> Result<(), String> {
     };
 
     bubble
-        .set_position(Position::Physical(PhysicalPosition { x, y }))
+        .set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }))
         .map_err(|error| format!("Could not restore bubble position: {}", error))?;
 
     Ok(())
