@@ -55,3 +55,13 @@ custommodels/
 # Large local documents
 local-documents/
 indexed-data/
+
+
+release/
+src-tauri/target/
+*.AppImage
+*.deb
+*.rpm
+*.exe
+*.msi
+*.nsis.zip

@@ -1,0 +1,50 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="110" x2="900" y2="920" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#36ff99"/>
+      <stop offset="0.42" stop-color="#16d6ff"/>
+      <stop offset="1" stop-color="#7c3cff"/>
+    </linearGradient>
+    <linearGradient id="face" x1="260" y1="230" x2="770" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#07140f"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="0 0 0 0 0.21
+                0 0 0 0 1
+                0 0 0 0 0.6
+                0 0 0 0.7 0"/>
+      <feBlend in="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="232" fill="#05070a"/>
+  <path d="M512 92C280 92 92 280 92 512s188 420 420 420 420-188 420-420S744 92 512 92Z" fill="url(#bg)" opacity="0.95"/>
+  <path d="M512 156C315.4 156 156 315.4 156 512s159.4 356 356 356 356-159.4 356-356S708.6 156 512 156Z" fill="#05070a"/>
+
+  <path filter="url(#glow)" d="M512 206c-136 0-246 98.7-246 220.5v180.7C266 729 376 828 512 828s246-99 246-220.8V426.5C758 304.7 648 206 512 206Z" fill="url(#face)"/>
+
+  <path d="M352 428c0-72.3 58.7-131 131-131h58c72.3 0 131 58.7 131 131v133c0 72.3-58.7 131-131 131h-58c-72.3 0-131-58.7-131-131V428Z" fill="#08130f" stroke="#36ff99" stroke-width="26"/>
+
+  <path d="M397 405c0-21.5 17.5-39 39-39h152c21.5 0 39 17.5 39 39v34H397v-34Z" fill="#36ff99" opacity="0.18"/>
+
+  <circle cx="442" cy="508" r="38" fill="#36ff99"/>
+  <circle cx="582" cy="508" r="38" fill="#36ff99"/>
+  <circle cx="442" cy="508" r="14" fill="#04100b"/>
+  <circle cx="582" cy="508" r="14" fill="#04100b"/>
+
+  <path d="M438 612c39 36 109 36 148 0" fill="none" stroke="#36ff99" stroke-width="24" stroke-linecap="round"/>
+
+  <path d="M512 206v-74" stroke="#36ff99" stroke-width="26" stroke-linecap="round"/>
+  <circle cx="512" cy="116" r="32" fill="#36ff99"/>
+
+  <path d="M326 498h-76c-23.7 0-43 19.3-43 43v74c0 23.7 19.3 43 43 43h76" fill="none" stroke="#36ff99" stroke-width="24" stroke-linecap="round"/>
+  <path d="M698 498h76c23.7 0 43 19.3 43 43v74c0 23.7-19.3 43-43 43h-76" fill="none" stroke="#36ff99" stroke-width="24" stroke-linecap="round"/>
+
+  <path d="M335 764 256 843" stroke="#16d6ff" stroke-width="30" stroke-linecap="round"/>
+  <path d="M689 764 768 843" stroke="#7c3cff" stroke-width="30" stroke-linecap="round"/>
+
+  <text x="512" y="925" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="64" font-weight="800" fill="#ffffff" opacity="0.95">LM</text>
+</svg>
