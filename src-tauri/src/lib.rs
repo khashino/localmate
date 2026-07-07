@@ -84,6 +84,7 @@ struct ChatRecord {
 struct SavedPrompt {
     id: i64,
     title: String,
+    category: String,
     content: String,
     created_at: i64,
 }
@@ -156,6 +157,7 @@ fn init_db(conn: &Connection) -> Result<(), String> {
         CREATE TABLE IF NOT EXISTS saved_prompts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT 'General',
             content TEXT NOT NULL,
             created_at INTEGER NOT NULL
         );
@@ -189,6 +191,11 @@ fn init_db(conn: &Connection) -> Result<(), String> {
         ",
     )
     .map_err(|error| format!("Could not initialize SQLite DB: {}", error))?;
+
+    let _ = conn.execute(
+        "ALTER TABLE saved_prompts ADD COLUMN category TEXT NOT NULL DEFAULT 'General'",
+        [],
+    );
 
     Ok(())
 }
@@ -651,13 +658,27 @@ fn clear_chat_session(app: AppHandle, session_id: i64) -> Result<String, String>
     Ok("Chat session cleared.".to_string())
 }
 
+
+
+
 #[tauri::command]
-fn save_prompt(app: AppHandle, title: String, content: String) -> Result<String, String> {
+fn save_prompt(
+    app: AppHandle,
+    title: String,
+    category: String,
+    content: String,
+) -> Result<String, String> {
     let conn = db(&app)?;
 
+    let clean_category = if category.trim().is_empty() {
+        "General".to_string()
+    } else {
+        category.trim().to_string()
+    };
+
     conn.execute(
-        "INSERT INTO saved_prompts (title, content, created_at) VALUES (?1, ?2, ?3)",
-        params![title, content, now_ts()],
+        "INSERT INTO saved_prompts (title, category, content, created_at) VALUES (?1, ?2, ?3, ?4)",
+        params![title, clean_category, content, now_ts()],
     )
     .map_err(|error| format!("Could not save prompt: {}", error))?;
 
@@ -665,11 +686,40 @@ fn save_prompt(app: AppHandle, title: String, content: String) -> Result<String,
 }
 
 #[tauri::command]
+fn update_prompt(
+    app: AppHandle,
+    id: i64,
+    title: String,
+    category: String,
+    content: String,
+) -> Result<String, String> {
+    let conn = db(&app)?;
+
+    conn.execute(
+        "UPDATE saved_prompts SET title = ?1, category = ?2, content = ?3 WHERE id = ?4",
+        params![title, category, content, id],
+    )
+    .map_err(|error| format!("Could not update prompt: {}", error))?;
+
+    Ok("Prompt updated.".to_string())
+}
+
+#[tauri::command]
+fn delete_prompt(app: AppHandle, id: i64) -> Result<String, String> {
+    let conn = db(&app)?;
+
+    conn.execute("DELETE FROM saved_prompts WHERE id = ?1", params![id])
+        .map_err(|error| format!("Could not delete prompt: {}", error))?;
+
+    Ok("Prompt deleted.".to_string())
+}
+
+#[tauri::command]
 fn get_saved_prompts(app: AppHandle) -> Result<Vec<SavedPrompt>, String> {
     let conn = db(&app)?;
 
     let mut stmt = conn
-        .prepare("SELECT id, title, content, created_at FROM saved_prompts ORDER BY id DESC LIMIT 50")
+        .prepare("SELECT id, title, category, content, created_at FROM saved_prompts ORDER BY category ASC, title ASC")
         .map_err(|error| format!("Could not prepare prompts query: {}", error))?;
 
     let rows = stmt
@@ -677,8 +727,9 @@ fn get_saved_prompts(app: AppHandle) -> Result<Vec<SavedPrompt>, String> {
             Ok(SavedPrompt {
                 id: row.get(0)?,
                 title: row.get(1)?,
-                content: row.get(2)?,
-                created_at: row.get(3)?,
+                category: row.get(2)?,
+                content: row.get(3)?,
+                created_at: row.get(4)?,
             })
         })
         .map_err(|error| format!("Could not query prompts: {}", error))?;
@@ -691,6 +742,53 @@ fn get_saved_prompts(app: AppHandle) -> Result<Vec<SavedPrompt>, String> {
 
     Ok(prompts)
 }
+
+#[derive(Debug, Deserialize)]
+struct ImportPrompt {
+    title: String,
+    category: Option<String>,
+    content: String,
+}
+
+#[tauri::command]
+fn import_prompts_json(app: AppHandle, json_text: String) -> Result<String, String> {
+    let prompts: Vec<ImportPrompt> = serde_json::from_str(&json_text)
+        .map_err(|error| format!("Invalid prompts JSON: {}", error))?;
+
+    let conn = db(&app)?;
+    let mut imported = 0usize;
+
+    for prompt in prompts {
+        let category = prompt.category.unwrap_or_else(|| "General".to_string());
+
+        if prompt.title.trim().is_empty() || prompt.content.trim().is_empty() {
+            continue;
+        }
+
+        conn.execute(
+            "INSERT INTO saved_prompts (title, category, content, created_at) VALUES (?1, ?2, ?3, ?4)",
+            params![
+                prompt.title.trim(),
+                category.trim(),
+                prompt.content.trim(),
+                now_ts()
+            ],
+        )
+        .map_err(|error| format!("Could not import prompt: {}", error))?;
+
+        imported += 1;
+    }
+
+    Ok(format!("Imported {} prompts.", imported))
+}
+
+#[tauri::command]
+fn export_prompts_json(app: AppHandle) -> Result<String, String> {
+    let prompts = get_saved_prompts(app)?;
+    serde_json::to_string_pretty(&prompts)
+        .map_err(|error| format!("Could not export prompts: {}", error))
+}
+
 
 #[tauri::command]
 fn parse_document(app: AppHandle, file_path: String) -> Result<String, String> {
@@ -1183,7 +1281,11 @@ pub fn run() {
             get_chat_history,
             clear_chat_session,
             save_prompt,
+            update_prompt,
+            delete_prompt,
             get_saved_prompts,
+            import_prompts_json,
+            export_prompts_json,
             parse_document,
             index_folder,
             get_unembedded_chunks,

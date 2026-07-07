@@ -268,7 +268,7 @@ export function ChatView({ serverOnline }: ChatViewProps) {
 
     try {
       const title = trimmed.slice(0, 48);
-      await savePrompt(title, trimmed);
+      await savePrompt(title, "Chat", trimmed);
       await loadPrompts();
       addAssistantMessage("Prompt saved.");
     } catch (error) {

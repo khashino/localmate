@@ -54,6 +54,7 @@ export type ChatRecord = {
 export type SavedPrompt = {
   id: number;
   title: string;
+  category: string;
   content: string;
   created_at: number;
 };
@@ -140,8 +141,21 @@ export async function clearChatSession(sessionId: number): Promise<string> {
   return invoke<string>("clear_chat_session", { sessionId });
 }
 
-export async function savePrompt(title: string, content: string): Promise<string> {
-  return invoke<string>("save_prompt", { title, content });
+export async function savePrompt(
+  title: string,
+  category: string,
+  content: string
+): Promise<string> {
+  return invoke<string>("save_prompt", { title, category, content });
+}
+
+export async function updatePrompt(
+  id: number,
+  title: string,
+  category: string,
+  content: string
+): Promise<string> {
+  return invoke<string>("update_prompt", { id, title, category, content });
 }
 
 export async function deletePrompt(id: number): Promise<string> {
@@ -211,4 +225,13 @@ export async function clearFolderIndex(folderPath: string): Promise<string> {
 
 export async function openSourceFile(filePath: string): Promise<string> {
   return invoke<string>("open_source_file", { filePath });
+}
+
+
+export async function importPromptsJson(jsonText: string): Promise<string> {
+  return invoke<string>("import_prompts_json", { jsonText });
+}
+
+export async function exportPromptsJson(): Promise<string> {
+  return invoke<string>("export_prompts_json");
 }

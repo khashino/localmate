@@ -10,6 +10,7 @@ import { AutomationsView } from "../components/views/AutomationsView";
 import { SettingsView } from "../components/views/SettingsView";
 import { HomeView } from "../components/views/HomeView";
 import { TranslatorView } from "../components/views/TranslatorView";
+import { PromptsView } from "../components/views/PromptsView";
 import { checkLlamaServer } from "../lib/llamaClient";
 import { getAppSetting, setAppSetting } from "../lib/tauriCommands";
 import { registerLocalMateShortcut } from "../lib/globalShortcut";
@@ -48,6 +49,10 @@ const viewTitles: Record<ViewKey, { title: string; subtitle: string }> = {
   translator: {
     title: "Translator",
     subtitle: "Translate text locally while preserving meaning and tone.",
+  },
+  prompts: {
+    title: "Prompts",
+    subtitle: "Create, edit, search, import, and export reusable prompts.",
   },
   settings: {
     title: "Settings",
@@ -111,6 +116,8 @@ export function LocalMateApp() {
         return <AutomationsView serverOnline={serverOnline} />;
       case "translator":
         return <TranslatorView serverOnline={serverOnline} />;
+      case "prompts":
+        return <PromptsView />;
       case "settings":
         return (
           <SettingsView

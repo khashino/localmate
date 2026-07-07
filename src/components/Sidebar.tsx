@@ -4,6 +4,7 @@ import {
   FileText,
   Home,
   Languages,
+  Library,
   Mic,
   PenLine,
   Settings,
@@ -20,6 +21,7 @@ export type ViewKey =
   | "meetings"
   | "automations"
   | "translator"
+  | "prompts"
   | "settings";
 
 type SidebarProps = {
@@ -71,6 +73,11 @@ const navItems: {
     key: "translator",
     label: "Translate",
     icon: Languages,
+  },
+  {
+    key: "prompts",
+    label: "Prompts",
+    icon: Library,
   },
   {
     key: "settings",
