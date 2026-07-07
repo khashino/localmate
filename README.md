@@ -1,59 +1,84 @@
+<p align="center">
+  <img src="assets/localmate_ai_assistant_banner.png" alt="LocalMate Banner" width="100%" />
+</p>
+
 # LocalMate
 
-LocalMate is a private local desktop AI assistant built with **Tauri**, **React**, **TypeScript**, and **llama.cpp**.
+**LocalMate** is a private local desktop AI assistant built with **Tauri**, **React**, **TypeScript**, **Rust**, **SQLite**, and **llama.cpp**.
 
-It connects to a local `llama-server` running on your own machine, so your chats, files, prompts, and settings stay local.
+It connects to your local `llama-server` and helps you chat with your own GGUF model, work with local files, translate text, manage prompts, record voice notes, and control model runtime profiles from one compact desktop app.
 
-## Features
+## What It Does
 
-- Local AI chat using `llama.cpp`
-- Dynamic `llama-server` path setting
-- Dynamic `.gguf` model path setting
-- Start, stop, and restart local model server from the app
-- Compact always-on-top assistant window
-- Floating robot bubble when the app is closed
-- Click the robot bubble to reopen LocalMate
-- Drag handle on the bubble for moving it around the desktop
-- Multiple color themes
-- PDF reader
-- DOCX reader
-- Text and code file reader
-- Folder picker
-- Local folder index
-- Ask questions over indexed folders
-- Citations by filename and chunk
-- SQLite local chat history
-- Chat sessions
-- Saved prompts
-- Recent files
-- App settings
-- Server profile settings
-- Local translator page
+- Local AI chat with llama.cpp
+- Runtime profiles for different GGUF models
+- Start, stop, and restart `llama-server` from the app
+- PDF, DOCX, text, code, and folder indexing
+- Folder Q&A with citations
+- Semantic search support when embeddings are enabled
+- Local translator
+- Prompt Manager with import/export
+- Native Linux voice recorder using `arecord`
+- Voice note cleanup, summaries, and action items
+- Floating draggable assistant bubble
+- Theme selection
+- Local app backup export
 
-## Tech Stack
+## Download
 
-- Tauri 2
-- React
-- TypeScript
-- Vite
-- Rust
-- SQLite
-- llama.cpp
-- GGUF models
+The first Linux release is available from GitHub Releases:
+
+**LocalMate v1.0.0**
+
+Download one of:
+
+- `.AppImage` for portable Linux use
+- `.deb` for Debian, Ubuntu, Kali, Linux Mint
+- `.rpm` for Fedora/RHEL-based systems
+
+```text
+https://github.com/khashino/localmate/releases
+```
+
+## Linux Install
+
+### AppImage
+
+```bash
+chmod +x LocalMate_0.1.0_amd64.AppImage
+./LocalMate_0.1.0_amd64.AppImage
+```
+
+### Debian / Ubuntu / Kali
+
+```bash
+sudo apt install ./LocalMate_0.1.0_amd64.deb
+localmate
+```
+
+### Fedora / RPM
+
+```bash
+sudo rpm -i LocalMate-0.1.0-1.x86_64.rpm
+localmate
+```
 
 ## Requirements
 
 You need:
 
-- Node.js
-- npm
-- Rust
-- Cargo
-- Tauri dependencies for your OS
-- llama.cpp built locally
-- A `.gguf` model file
+- Linux desktop
+- `llama.cpp`
+- a `.gguf` model
+- Node.js and Rust only if building from source
 
-Example local server command:
+For voice recording on Linux:
+
+```bash
+sudo apt install alsa-utils
+```
+
+## llama.cpp Example
 
 ```bash
 /path/to/llama.cpp/build/bin/llama-server \
@@ -64,172 +89,77 @@ Example local server command:
   --port 8080
 ```
 
-LocalMate can also start this server for you after you configure the paths in Settings.
+LocalMate can also start this from the **Runtime** page after you set the server path and model path.
 
-## Install
+## First Setup
 
-Clone the repository:
+1. Open LocalMate.
+2. Go to **Runtime**.
+3. Create or edit a runtime profile.
+4. Set:
+   - `llama-server` path
+   - GGUF model path
+   - host
+   - port
+   - context size
+   - GPU layers
+   - embeddings on/off
+5. Click **Save profile**.
+6. Click **Activate + restart**.
+7. Start using Chat, Files, Translator, Prompts, or Voice.
+
+## Build From Source
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/localmate.git
+git clone https://github.com/khashino/localmate.git
 cd localmate
-```
-
-Install frontend dependencies:
-
-```bash
 npm install
-```
-
-Install Rust dependencies automatically during build:
-
-```bash
 npm run tauri dev
 ```
 
-## Development
-
-Run the app in development mode:
-
-```bash
-npm run tauri dev
-```
-
-Run frontend build only:
-
-```bash
-npm run build
-```
-
-Build production desktop app:
+Build Linux installers:
 
 ```bash
 npm run tauri build
 ```
 
-Production bundles will be created under:
+Build output:
 
-```bash
+```text
 src-tauri/target/release/bundle
 ```
 
-## First Setup
+## Add the Banner Image
 
-Open LocalMate and go to **Settings**.
-
-Set:
-
-- `llama-server path`
-- `.gguf model path`
-- host, usually `127.0.0.1`
-- port, usually `8080`
-- context size, for example `2048` or `4096`
-- GPU layers, use `0` for CPU-only
-
-Then click:
-
-1. Save profile
-2. Start
-3. Test connection
-
-When the status becomes green, Chat and Translator are ready.
-
-## Chat
-
-Use the **Chat** section to talk with your local model.
-
-Chat sessions are saved locally in SQLite.
-
-## Files
-
-Use the **Files** section to:
-
-- open PDF files
-- open DOCX files
-- open text/code files
-- index folders
-- ask questions over indexed folders
-
-Folder answers include citations like:
+This README expects the banner image here:
 
 ```text
-[1] notes.docx — chunk 0
-[2] contract.pdf — chunk 3
+assets/localmate_ai_assistant_banner.png
 ```
 
-## Translator
+Create the folder and copy the banner:
 
-Use the **Translator** section to translate text locally.
-
-Supported options include:
-
-- source language
-- target language
-- tone
-- copy result
-- swap languages
-
-The translation is generated by your local model.
-
-## Floating Bubble
-
-When you close the main LocalMate window, it hides instead of quitting.
-
-A small robot bubble appears on the desktop.
-
-- Click the robot to reopen LocalMate
-- Drag from the top handle to move the bubble
-
-This is useful on Linux systems where tray icons or global shortcuts may not work reliably.
+```bash
+mkdir -p assets
+cp localmate_ai_assistant_banner.png assets/localmate_ai_assistant_banner.png
+```
 
 ## Privacy
 
-LocalMate is designed to keep data local.
+LocalMate is local-first.
 
-The app stores local data in SQLite, including:
+Your chats, prompts, indexed file chunks, runtime profiles, recordings, and settings stay on your own computer.
 
-- chat history
-- chat sessions
-- saved prompts
-- recent files
-- indexed folder chunks
-- app settings
-- server profile settings
-
-Your model runs locally through `llama.cpp`.
+LocalMate does not include a model file. You choose and run your own GGUF model locally.
 
 ## Notes
 
-Large `.gguf` model files should not be committed to Git.
-
-The `.gitignore` excludes:
-
-- `node_modules`
-- build outputs
-- Rust target files
-- SQLite databases
-- `.gguf` models
-- local indexed data
-
-## Roadmap
-
-Planned improvements:
-
-- real semantic search with stored embeddings
-- embedding progress UI
-- citation cards
-- open source file from citation
-- prompt manager page
-- model profile presets
-- better installer packaging
-- voice input
-- OCR support
-- local automation tools
+- Large `.gguf` model files are not included.
+- Release installers are not stored in Git history.
+- Download installers from GitHub Releases.
+- Windows installer support is planned through GitHub Actions.
+- Automatic voice transcription is not included yet.
 
 ## License
 
 MIT
-
-## Disclaimer
-
-LocalMate is an experimental local AI assistant. Always review model output before using it for important decisions, code changes, documents, or commands.
