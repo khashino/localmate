@@ -2,16 +2,32 @@
   <img src="assets/localmate_ai_assistant_banner.png" alt="LocalMate Banner" width="100%" />
 </p>
 
-# LocalMate
+<h1 align="center">LocalMate</h1>
 
-**LocalMate** is a private local desktop AI assistant built with **Tauri**, **React**, **TypeScript**, **Rust**, **SQLite**, and **llama.cpp**.
+<p align="center">
+  <strong>Private local desktop AI assistant powered by llama.cpp</strong>
+</p>
 
-It connects to your local `llama-server` and helps you chat with your own GGUF model, work with local files, translate text, manage prompts, record voice notes, and control model runtime profiles from one compact desktop app.
+<p align="center">
+  <a href="https://github.com/khashino/localmate/releases">Download Release</a>
+  ·
+  <a href="#build-from-source">Build From Source</a>
+  ·
+  <a href="#screenshots">Screenshots</a>
+</p>
 
-## What It Does
+---
 
-- Local AI chat with llama.cpp
-- Runtime profiles for different GGUF models
+## About
+
+**LocalMate** is a compact desktop AI assistant built with **Tauri**, **React**, **TypeScript**, **Rust**, **SQLite**, and **llama.cpp**.
+
+It runs locally on your laptop and connects to your own `llama-server`, so your chats, prompts, files, runtime profiles, and notes stay on your machine.
+
+## Features
+
+- Local AI chat with your own GGUF model
+- Runtime profiles for different llama.cpp models
 - Start, stop, and restart `llama-server` from the app
 - PDF, DOCX, text, code, and folder indexing
 - Folder Q&A with citations
@@ -22,13 +38,47 @@ It connects to your local `llama-server` and helps you chat with your own GGUF m
 - Voice note cleanup, summaries, and action items
 - Floating draggable assistant bubble
 - Theme selection
-- Local app backup export
+- Local backup export
+
+## Screenshots
+
+### Chat
+
+<p align="center">
+  <img src="assets/screenshot1.jpg" alt="LocalMate Chat" width="420" />
+</p>
+
+### Runtime Profiles
+
+<p align="center">
+  <img src="assets/screenshot2.jpg" alt="LocalMate Runtime" width="420" />
+</p>
+
+### Translator
+
+<p align="center">
+  <img src="assets/screenshot3.jpg" alt="LocalMate Translator" width="420" />
+</p>
+
+### Settings
+
+<p align="center">
+  <img src="assets/screenshot4.jpg" alt="LocalMate Settings" width="420" />
+</p>
+
+### Floating Bubble
+
+<p align="center">
+  <img src="assets/screenshot5.jpg" alt="LocalMate Floating Bubble" width="520" />
+</p>
 
 ## Download
 
 The first Linux release is available from GitHub Releases:
 
-**LocalMate v1.0.0**
+```text
+https://github.com/khashino/localmate/releases
+```
 
 Download one of:
 
@@ -36,11 +86,7 @@ Download one of:
 - `.deb` for Debian, Ubuntu, Kali, Linux Mint
 - `.rpm` for Fedora/RHEL-based systems
 
-```text
-https://github.com/khashino/localmate/releases
-```
-
-## Linux Install
+## Install on Linux
 
 ### AppImage
 
@@ -72,7 +118,7 @@ You need:
 - a `.gguf` model
 - Node.js and Rust only if building from source
 
-For voice recording on Linux:
+For native voice recording:
 
 ```bash
 sudo apt install alsa-utils
@@ -129,26 +175,24 @@ Build output:
 src-tauri/target/release/bundle
 ```
 
-## Add the Banner Image
+## Assets Used by README
 
-This README expects the banner image here:
+This README expects these files:
 
 ```text
 assets/localmate_ai_assistant_banner.png
-```
-
-Create the folder and copy the banner:
-
-```bash
-mkdir -p assets
-cp localmate_ai_assistant_banner.png assets/localmate_ai_assistant_banner.png
+assets/screenshot1.jpg
+assets/screenshot2.jpg
+assets/screenshot3.jpg
+assets/screenshot4.jpg
+assets/screenshot5.jpg
 ```
 
 ## Privacy
 
 LocalMate is local-first.
 
-Your chats, prompts, indexed file chunks, runtime profiles, recordings, and settings stay on your own computer.
+Your chats, prompts, indexed file chunks, runtime profiles, recordings, and settings stay on your computer.
 
 LocalMate does not include a model file. You choose and run your own GGUF model locally.
 
