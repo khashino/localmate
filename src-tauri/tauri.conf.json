@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "localmate",
+  "version": "0.1.0",
+  "identifier": "com.khashino.localmate",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "LocalMate",
+        "width": 440,
+        "height": 760,
+        "minWidth": 380,
+        "minHeight": 620,
+        "resizable": true,
+        "alwaysOnTop": true,
+        "center": false,
+        "decorations": true,
+        "label": "main",
+        "visible": true
+      },
+      {
+        "label": "bubble",
+        "title": "LocalMate Bubble",
+        "url": "index.html?window=bubble",
+        "width": 76,
+        "height": 76,
+        "minWidth": 76,
+        "minHeight": 76,
+        "maxWidth": 76,
+        "maxHeight": 76,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "decorations": false,
+        "transparent": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "center": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
