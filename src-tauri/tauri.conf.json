@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "LocalMate",
-        "width": 440,
+        "width": 460,
         "height": 760,
-        "minWidth": 380,
+        "minWidth": 390,
         "minHeight": 620,
         "resizable": true,
         "alwaysOnTop": true,

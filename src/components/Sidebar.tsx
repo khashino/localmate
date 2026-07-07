@@ -6,12 +6,14 @@ import {
   Home,
   Languages,
   Library,
+  Menu,
   Mic,
   PenLine,
   Settings,
   Sparkles,
   Workflow,
 } from "lucide-react";
+import { useState } from "react";
 
 export type ViewKey =
   | "home"
@@ -32,89 +34,55 @@ type SidebarProps = {
   setActiveView: (view: ViewKey) => void;
 };
 
-const navItems: {
+const mainItems: {
   key: ViewKey;
   label: string;
   icon: typeof Home;
 }[] = [
-  {
-    key: "home",
-    label: "Home",
-    icon: Home,
-  },
-  {
-    key: "chat",
-    label: "Chat",
-    icon: Bot,
-  },
-  {
-    key: "files",
-    label: "Files",
-    icon: FileText,
-  },
-  {
-    key: "write",
-    label: "Write",
-    icon: PenLine,
-  },
-  {
-    key: "code",
-    label: "Code",
-    icon: Code2,
-  },
-  {
-    key: "meetings",
-    label: "Meet",
-    icon: Mic,
-  },
-  {
-    key: "automations",
-    label: "Auto",
-    icon: Workflow,
-  },
-  {
-    key: "translator",
-    label: "Trans",
-    icon: Languages,
-  },
-  {
-    key: "prompts",
-    label: "Prompts",
-    icon: Library,
-  },
-  {
-    key: "runtime",
-    label: "Runtime",
-    icon: Boxes,
-  },
-  {
-    key: "voice",
-    label: "Voice",
-    icon: Mic,
-  },
-  {
-    key: "settings",
-    label: "Settings",
-    icon: Settings,
-  },
+  { key: "chat", label: "Chat", icon: Bot },
+  { key: "files", label: "Files", icon: FileText },
+  { key: "runtime", label: "Run", icon: Boxes },
+  { key: "voice", label: "Voice", icon: Mic },
+];
+
+const moreItems: {
+  key: ViewKey;
+  label: string;
+  icon: typeof Home;
+}[] = [
+  { key: "write", label: "Write", icon: PenLine },
+  { key: "code", label: "Code", icon: Code2 },
+  { key: "translator", label: "Translate", icon: Languages },
+  { key: "prompts", label: "Prompts", icon: Library },
+  { key: "meetings", label: "Meetings", icon: Mic },
+  { key: "automations", label: "Automations", icon: Workflow },
+  { key: "settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar({ activeView, setActiveView }: SidebarProps) {
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const activeMoreItem = moreItems.find((item) => item.key === activeView);
+
+  function goTo(view: ViewKey) {
+    setActiveView(view);
+    setMoreOpen(false);
+  }
+
   return (
-    <aside className="sidebar">
-      <div className="brand">
+    <aside className="sidebar simple-topbar">
+      <div className="brand simple-brand">
         <div className="brand-mark">
-          <Sparkles size={18} />
+          <Sparkles size={15} />
         </div>
 
         <div>
           <div className="brand-name">LocalMate</div>
-          <div className="brand-subtitle">private local AI</div>
         </div>
       </div>
 
-      <nav className="nav">
-        {navItems.map((item) => {
+      <nav className="nav simple-nav">
+        {mainItems.map((item) => {
           const Icon = item.icon;
 
           return (
@@ -123,13 +91,48 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
               className={
                 activeView === item.key ? "nav-item active" : "nav-item"
               }
-              onClick={() => setActiveView(item.key)}
+              onClick={() => goTo(item.key)}
             >
-              <Icon size={15} />
+              <Icon size={14} />
               <span>{item.label}</span>
             </button>
           );
         })}
+
+        <div className="more-nav-wrap">
+          <button
+            type="button"
+            className={activeMoreItem ? "nav-item active" : "nav-item"}
+            onClick={() => setMoreOpen((open) => !open)}
+          >
+            <Menu size={14} />
+            <span>{activeMoreItem ? activeMoreItem.label : "More"}</span>
+          </button>
+
+          {moreOpen && (
+            <div className="more-menu">
+              {moreItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    type="button"
+                    key={item.key}
+                    className={
+                      activeView === item.key
+                        ? "more-menu-item active"
+                        : "more-menu-item"
+                    }
+                    onClick={() => goTo(item.key)}
+                  >
+                    <Icon size={14} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </nav>
     </aside>
   );

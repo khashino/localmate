@@ -235,3 +235,15 @@ export async function importPromptsJson(jsonText: string): Promise<string> {
 export async function exportPromptsJson(): Promise<string> {
   return invoke<string>("export_prompts_json");
 }
+
+export async function startNativeAudioRecording(): Promise<string> {
+  return invoke<string>("start_native_audio_recording");
+}
+
+export async function stopNativeAudioRecording(): Promise<string> {
+  return invoke<string>("stop_native_audio_recording");
+}
+
+export async function getLastAudioRecording(): Promise<string | null> {
+  return invoke<string | null>("get_last_audio_recording");
+}

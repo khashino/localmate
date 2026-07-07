@@ -13,6 +13,11 @@ use tauri::{AppHandle, Manager, WindowEvent};
 use walkdir::WalkDir;
 use zip::ZipArchive;
 
+struct AudioRecorderState {
+    child: Mutex<Option<Child>>,
+    current_path: Mutex<Option<String>>,
+}
+
 struct LlamaServerState {
     child: Mutex<Option<Child>>,
 }
@@ -1258,6 +1263,104 @@ fn open_source_file(file_path: String) -> Result<String, String> {
 }
 
 
+
+#[tauri::command]
+fn start_native_audio_recording(
+    app: AppHandle,
+    state: tauri::State<AudioRecorderState>,
+) -> Result<String, String> {
+    let mut child_guard = state
+        .child
+        .lock()
+        .map_err(|_| "Could not lock audio recorder state.".to_string())?;
+
+    if child_guard.is_some() {
+        return Err("Recording is already running.".to_string());
+    }
+
+    let recordings_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("Could not find app data directory: {}", error))?
+        .join("recordings");
+
+    fs::create_dir_all(&recordings_dir)
+        .map_err(|error| format!("Could not create recordings directory: {}", error))?;
+
+    let file_path = recordings_dir.join(format!("localmate-recording-{}.wav", now_ts()));
+    let file_path_text = file_path.to_string_lossy().to_string();
+
+    let child = Command::new("arecord")
+        .args([
+            "-f",
+            "cd",
+            "-t",
+            "wav",
+            "-D",
+            "default",
+            &file_path_text,
+        ])
+        .spawn()
+        .map_err(|error| {
+            format!(
+                "Could not start arecord. Install ALSA tools with: sudo apt install alsa-utils -y. Error: {}",
+                error
+            )
+        })?;
+
+    *child_guard = Some(child);
+
+    let mut path_guard = state
+        .current_path
+        .lock()
+        .map_err(|_| "Could not lock audio path state.".to_string())?;
+
+    *path_guard = Some(file_path_text.clone());
+
+    Ok(file_path_text)
+}
+
+#[tauri::command]
+fn stop_native_audio_recording(
+    state: tauri::State<AudioRecorderState>,
+) -> Result<String, String> {
+    let mut child_guard = state
+        .child
+        .lock()
+        .map_err(|_| "Could not lock audio recorder state.".to_string())?;
+
+    if let Some(child) = child_guard.as_mut() {
+        let _ = child.kill();
+        let _ = child.wait();
+    } else {
+        return Err("No active recording.".to_string());
+    }
+
+    *child_guard = None;
+
+    let path_guard = state
+        .current_path
+        .lock()
+        .map_err(|_| "Could not lock audio path state.".to_string())?;
+
+    Ok(path_guard
+        .clone()
+        .unwrap_or_else(|| "Recording stopped.".to_string()))
+}
+
+#[tauri::command]
+fn get_last_audio_recording(
+    state: tauri::State<AudioRecorderState>,
+) -> Result<Option<String>, String> {
+    let path_guard = state
+        .current_path
+        .lock()
+        .map_err(|_| "Could not lock audio path state.".to_string())?;
+
+    Ok(path_guard.clone())
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1265,8 +1368,15 @@ pub fn run() {
         .manage(LlamaServerState {
             child: Mutex::new(None),
         })
+        .manage(AudioRecorderState {
+            child: Mutex::new(None),
+            current_path: Mutex::new(None),
+        })
         .invoke_handler(tauri::generate_handler![
             show_main_window,
+            start_native_audio_recording,
+            stop_native_audio_recording,
+            get_last_audio_recording,
             llama_server_status,
             get_server_profile,
             save_server_profile,

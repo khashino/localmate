@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { askLocalMate } from "../../lib/llamaClient";
-import { getAppSetting, setAppSetting } from "../../lib/tauriCommands";
+import {
+  openSourceFile,
+  startNativeAudioRecording,
+  stopNativeAudioRecording,
+} from "../../lib/tauriCommands";
 import { TaskLayout } from "./TaskLayout";
 
 type VoiceViewProps = {
@@ -8,32 +12,64 @@ type VoiceViewProps = {
 };
 
 export function VoiceView({ serverOnline }: VoiceViewProps) {
+  const [recording, setRecording] = useState(false);
+  const [audioPath, setAudioPath] = useState("");
+  const [recordingStartedAt, setRecordingStartedAt] = useState("");
   const [transcript, setTranscript] = useState("");
   const [result, setResult] = useState("");
   const [busy, setBusy] = useState(false);
-  const [whisperPath, setWhisperPath] = useState("");
-  const [whisperModelPath, setWhisperModelPath] = useState("");
   const [log, setLog] = useState(
-    "Paste a transcript or use an external local Whisper tool, then clean/summarize with LocalMate."
+    "Native Linux recorder uses arecord. Record audio, open the WAV file, then type/paste transcript notes."
   );
 
-  async function loadWhisperSettings() {
-    setWhisperPath((await getAppSetting("whisper_path")) || "");
-    setWhisperModelPath((await getAppSetting("whisper_model_path")) || "");
-    setLog("Whisper settings loaded.");
+  async function startRecording() {
+    if (recording) return;
+
+    try {
+      const path = await startNativeAudioRecording();
+      setAudioPath(path);
+      setRecording(true);
+      setRecordingStartedAt(new Date().toLocaleString());
+      setLog(`Recording started: ${path}`);
+    } catch (error) {
+      setRecording(false);
+      setLog(error instanceof Error ? error.message : "Could not start recording.");
+    }
   }
 
-  async function saveWhisperSettings() {
-    await setAppSetting("whisper_path", whisperPath);
-    await setAppSetting("whisper_model_path", whisperModelPath);
-    setLog("Whisper settings saved. Local recording/transcription backend can be added next.");
+  async function stopRecording() {
+    if (!recording) return;
+
+    try {
+      const path = await stopNativeAudioRecording();
+      setAudioPath(path);
+      setRecording(false);
+      setLog(`Recording saved: ${path}`);
+    } catch (error) {
+      setRecording(false);
+      setLog(error instanceof Error ? error.message : "Could not stop recording.");
+    }
+  }
+
+  async function openRecording() {
+    if (!audioPath) {
+      setLog("No recording path yet.");
+      return;
+    }
+
+    try {
+      await openSourceFile(audioPath);
+      setLog("Opened recording with system audio player.");
+    } catch (error) {
+      setLog(error instanceof Error ? error.message : "Could not open recording.");
+    }
   }
 
   async function runVoiceTask(task: "clean" | "summary" | "tasks") {
     const cleanTranscript = transcript.trim();
 
     if (!cleanTranscript) {
-      setResult("Paste transcript text first.");
+      setResult("Type or paste transcript/notes first.");
       return;
     }
 
@@ -47,23 +83,23 @@ export function VoiceView({ serverOnline }: VoiceViewProps) {
 
     const instruction =
       task === "clean"
-        ? "Clean this transcript into clear readable notes. Fix punctuation and obvious speech recognition mistakes. Preserve the original meaning."
+        ? "Clean this rough transcript or voice note into clear readable notes. Fix punctuation and structure. Preserve the original meaning."
         : task === "summary"
-          ? "Summarize this transcript into concise meeting or voice-note bullets."
-          : "Extract action items from this transcript. Include owner and due date only if mentioned. Otherwise use Unassigned and No due date.";
+          ? "Summarize this transcript or voice note into concise bullets."
+          : "Extract action items from this transcript or voice note. Include owner and due date only if mentioned. Otherwise use Unassigned and No due date.";
 
     try {
       const reply = await askLocalMate([
         {
           role: "system",
           content:
-            "You are LocalMate Voice Notes. Convert rough transcripts into clean useful notes. Do not invent facts.",
+            "You are LocalMate Voice Notes. Convert rough voice notes into clean useful notes. Do not invent facts.",
         },
         {
           role: "user",
           content: `${instruction}
 
-Transcript:
+Voice note text:
 ${cleanTranscript}`,
         },
       ]);
@@ -87,19 +123,67 @@ ${cleanTranscript}`,
       <div className="split-workspace">
         <div className="panel">
           <div className="panel-header">
-            <h2>Voice notes</h2>
+            <h2>Native recorder</h2>
           </div>
 
           <div className="terminal-box">
-            Browser speech recognition is not reliable inside Linux Tauri WebView.
-            Use local Whisper outside the app for now, paste the transcript here,
-            then let LocalMate clean, summarize, or extract tasks.
+            This recorder uses Linux ALSA arecord, not browser microphone APIs.
+            Install it with: sudo apt install alsa-utils -y
+          </div>
+
+          <div className={recording ? "recording-card active" : "recording-card"}>
+            <div className="recording-dot" />
+            <div>
+              <strong>{recording ? "Recording..." : "Recorder ready"}</strong>
+              <span>
+                {recordingStartedAt
+                  ? `Started: ${recordingStartedAt}`
+                  : "No active recording."}
+              </span>
+            </div>
+          </div>
+
+          <div className="button-row">
+            <button
+              type="button"
+              className="primary-button"
+              disabled={recording}
+              onClick={startRecording}
+            >
+              Start recording
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={!recording}
+              onClick={stopRecording}
+            >
+              Stop
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={!audioPath}
+              onClick={openRecording}
+            >
+              Open audio
+            </button>
+          </div>
+
+          <div className="path-box">
+            {audioPath || "Recording path will appear here."}
+          </div>
+
+          <div className="panel-header">
+            <h2>Transcript / notes</h2>
           </div>
 
           <textarea
             className="large-input"
             value={transcript}
-            placeholder="Paste transcript here..."
+            placeholder="Type or paste what was said in the recording..."
             onChange={(event) => setTranscript(event.target.value)}
           />
 
@@ -139,47 +223,7 @@ ${cleanTranscript}`,
                 setResult("");
               }}
             >
-              Clear
-            </button>
-          </div>
-
-          <div className="panel-header">
-            <h2>Local Whisper settings</h2>
-          </div>
-
-          <label className="field-label">
-            whisper.cpp executable path
-            <input
-              value={whisperPath}
-              placeholder="/path/to/whisper-cli"
-              onChange={(event) => setWhisperPath(event.target.value)}
-            />
-          </label>
-
-          <label className="field-label">
-            Whisper model path
-            <input
-              value={whisperModelPath}
-              placeholder="/path/to/ggml-model.bin"
-              onChange={(event) => setWhisperModelPath(event.target.value)}
-            />
-          </label>
-
-          <div className="button-row">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={loadWhisperSettings}
-            >
-              Load
-            </button>
-
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={saveWhisperSettings}
-            >
-              Save
+              Clear text
             </button>
           </div>
 
