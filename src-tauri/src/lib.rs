@@ -43,6 +43,17 @@ struct IndexResult {
     message: String,
 }
 
+
+#[derive(Debug, Serialize)]
+struct EmbeddingChunk {
+    chunk_id: i64,
+    file_name: String,
+    file_path: String,
+    chunk_index: i64,
+    content: String,
+}
+
+
 #[derive(Debug, Serialize)]
 struct SearchResult {
     file_name: String,
@@ -993,6 +1004,162 @@ fn show_main_window(app: AppHandle) -> Result<String, String> {
 }
 
 
+
+#[tauri::command]
+fn get_unembedded_chunks(
+    app: AppHandle,
+    folder_path: Option<String>,
+    limit: i64,
+) -> Result<Vec<EmbeddingChunk>, String> {
+    let conn = db(&app)?;
+
+    let mut chunks = Vec::new();
+
+    if let Some(folder) = folder_path {
+        let mut stmt = conn
+            .prepare(
+                "
+                SELECT file_chunks.id, file_chunks.file_name, file_chunks.file_path, file_chunks.chunk_index, file_chunks.content
+                FROM file_chunks
+                LEFT JOIN chunk_embeddings ON chunk_embeddings.chunk_id = file_chunks.id
+                WHERE file_chunks.folder_path = ?1
+                  AND chunk_embeddings.chunk_id IS NULL
+                ORDER BY file_chunks.id ASC
+                LIMIT ?2
+                ",
+            )
+            .map_err(|error| format!("Could not prepare unembedded chunk query: {}", error))?;
+
+        let rows = stmt
+            .query_map(params![folder, limit], |row| {
+                Ok(EmbeddingChunk {
+                    chunk_id: row.get(0)?,
+                    file_name: row.get(1)?,
+                    file_path: row.get(2)?,
+                    chunk_index: row.get(3)?,
+                    content: row.get(4)?,
+                })
+            })
+            .map_err(|error| format!("Could not query unembedded chunks: {}", error))?;
+
+        for row in rows {
+            chunks.push(row.map_err(|error| format!("Could not read unembedded chunk: {}", error))?);
+        }
+    } else {
+        let mut stmt = conn
+            .prepare(
+                "
+                SELECT file_chunks.id, file_chunks.file_name, file_chunks.file_path, file_chunks.chunk_index, file_chunks.content
+                FROM file_chunks
+                LEFT JOIN chunk_embeddings ON chunk_embeddings.chunk_id = file_chunks.id
+                WHERE chunk_embeddings.chunk_id IS NULL
+                ORDER BY file_chunks.id ASC
+                LIMIT ?1
+                ",
+            )
+            .map_err(|error| format!("Could not prepare unembedded chunk query: {}", error))?;
+
+        let rows = stmt
+            .query_map(params![limit], |row| {
+                Ok(EmbeddingChunk {
+                    chunk_id: row.get(0)?,
+                    file_name: row.get(1)?,
+                    file_path: row.get(2)?,
+                    chunk_index: row.get(3)?,
+                    content: row.get(4)?,
+                })
+            })
+            .map_err(|error| format!("Could not query unembedded chunks: {}", error))?;
+
+        for row in rows {
+            chunks.push(row.map_err(|error| format!("Could not read unembedded chunk: {}", error))?);
+        }
+    }
+
+    Ok(chunks)
+}
+
+#[tauri::command]
+fn clear_folder_index(app: AppHandle, folder_path: String) -> Result<String, String> {
+    let conn = db(&app)?;
+
+    let chunk_ids: Vec<i64> = {
+        let mut stmt = conn
+            .prepare("SELECT id FROM file_chunks WHERE folder_path = ?1")
+            .map_err(|error| format!("Could not prepare chunk id query: {}", error))?;
+
+        let rows = stmt
+            .query_map(params![folder_path.clone()], |row| row.get::<_, i64>(0))
+            .map_err(|error| format!("Could not query chunk ids: {}", error))?;
+
+        let mut ids = Vec::new();
+
+        for row in rows {
+            ids.push(row.map_err(|error| format!("Could not read chunk id: {}", error))?);
+        }
+
+        ids
+    };
+
+    for id in chunk_ids {
+        conn.execute(
+            "DELETE FROM chunk_embeddings WHERE chunk_id = ?1",
+            params![id],
+        )
+        .map_err(|error| format!("Could not delete chunk embedding: {}", error))?;
+    }
+
+    conn.execute(
+        "DELETE FROM file_chunks WHERE folder_path = ?1",
+        params![folder_path.clone()],
+    )
+    .map_err(|error| format!("Could not clear folder chunks: {}", error))?;
+
+    conn.execute(
+        "DELETE FROM indexed_folders WHERE folder_path = ?1",
+        params![folder_path],
+    )
+    .map_err(|error| format!("Could not remove indexed folder: {}", error))?;
+
+    Ok("Folder index cleared.".to_string())
+}
+
+#[tauri::command]
+fn open_source_file(file_path: String) -> Result<String, String> {
+    let path = PathBuf::from(&file_path);
+
+    if !path.exists() {
+        return Err(format!("File does not exist: {}", file_path));
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&file_path)
+            .spawn()
+            .map_err(|error| format!("Could not open file with xdg-open: {}", error))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&file_path)
+            .spawn()
+            .map_err(|error| format!("Could not open file: {}", error))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", "", &file_path])
+            .spawn()
+            .map_err(|error| format!("Could not open file: {}", error))?;
+    }
+
+    Ok("File opened.".to_string())
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1019,6 +1186,9 @@ pub fn run() {
             get_saved_prompts,
             parse_document,
             index_folder,
+            get_unembedded_chunks,
+            clear_folder_index,
+            open_source_file,
             search_index
         ])
         .on_window_event(|window, event| {

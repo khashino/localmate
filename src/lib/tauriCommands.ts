@@ -18,6 +18,15 @@ export type ModelPreset = {
   temperature: number;
 };
 
+
+export type EmbeddingChunk = {
+  chunk_id: number;
+  file_name: string;
+  file_path: string;
+  chunk_index: number;
+  content: string;
+};
+
 export type SearchResult = {
   chunk_id: number;
   file_name: string;
@@ -183,4 +192,23 @@ export async function searchIndex(
     queryEmbeddingJson,
     limit,
   });
+}
+
+
+export async function getUnembeddedChunks(
+  folderPath: string | null,
+  limit = 25
+): Promise<EmbeddingChunk[]> {
+  return invoke<EmbeddingChunk[]>("get_unembedded_chunks", {
+    folderPath,
+    limit,
+  });
+}
+
+export async function clearFolderIndex(folderPath: string): Promise<string> {
+  return invoke<string>("clear_folder_index", { folderPath });
+}
+
+export async function openSourceFile(filePath: string): Promise<string> {
+  return invoke<string>("open_source_file", { filePath });
 }
