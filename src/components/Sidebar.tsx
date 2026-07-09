@@ -10,6 +10,7 @@ import {
   Mic,
   PenLine,
   Settings,
+  Terminal,
   Sparkles,
   Workflow,
 } from "lucide-react";
@@ -27,7 +28,8 @@ export type ViewKey =
   | "prompts"
   | "runtime"
   | "voice"
-  | "settings";
+  | "settings"
+  | "tools";
 
 type SidebarProps = {
   activeView: ViewKey;
@@ -56,6 +58,7 @@ const moreItems: {
   { key: "prompts", label: "Prompts", icon: Library },
   { key: "meetings", label: "Meetings", icon: Mic },
   { key: "automations", label: "Automations", icon: Workflow },
+  { key: "tools", label: "Command Tools", icon: Terminal },
   { key: "settings", label: "Settings", icon: Settings },
 ];
 

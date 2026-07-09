@@ -13,6 +13,15 @@ use tauri::{AppHandle, Manager, WindowEvent};
 use walkdir::WalkDir;
 use zip::ZipArchive;
 
+
+#[derive(Debug, Serialize)]
+struct SafeCommandResult {
+    command: String,
+    stdout: String,
+    stderr: String,
+    status: i32,
+}
+
 struct AudioRecorderState {
     child: Mutex<Option<Child>>,
     current_path: Mutex<Option<String>>,
@@ -1361,6 +1370,242 @@ fn get_last_audio_recording(
 }
 
 
+
+fn split_shell_words(input: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let mut current = String::new();
+    let mut in_single = false;
+    let mut in_double = false;
+
+    for ch in input.chars() {
+        match ch {
+            '\'' if !in_double => {
+                in_single = !in_single;
+            }
+            '"' if !in_single => {
+                in_double = !in_double;
+            }
+            ' ' | '\t' | '\n' if !in_single && !in_double => {
+                if !current.is_empty() {
+                    words.push(current.clone());
+                    current.clear();
+                }
+            }
+            _ => current.push(ch),
+        }
+    }
+
+    if !current.is_empty() {
+        words.push(current);
+    }
+
+    words
+}
+
+fn is_blocked_shell_syntax(command: &str) -> bool {
+    let blocked = [
+        "&&", "||", ";", "|", "`", "$(", ">", "<", "\n", "\r",
+    ];
+
+    blocked.iter().any(|item| command.contains(item))
+}
+
+fn safe_command_allowed(program: &str, args: &[String]) -> Result<(), String> {
+    let blocked_programs = [
+        "sudo",
+        "su",
+        "rm",
+        "rmdir",
+        "mv",
+        "cp",
+        "chmod",
+        "chown",
+        "dd",
+        "mkfs",
+        "mount",
+        "umount",
+        "kill",
+        "killall",
+        "pkill",
+        "reboot",
+        "shutdown",
+        "poweroff",
+        "systemctl",
+        "service",
+        "apt",
+        "apt-get",
+        "dpkg",
+        "snap",
+        "flatpak",
+        "curl",
+        "wget",
+        "ssh",
+        "scp",
+        "rsync",
+        "python",
+        "python3",
+        "perl",
+        "ruby",
+        "node",
+        "npm",
+        "cargo",
+        "bash",
+        "sh",
+        "zsh",
+        "fish",
+    ];
+
+    if blocked_programs.contains(&program) {
+        return Err(format!("Blocked command: {}", program));
+    }
+
+    let allowed_programs = [
+        "pwd",
+        "ls",
+        "cat",
+        "head",
+        "tail",
+        "grep",
+        "find",
+        "df",
+        "du",
+        "free",
+        "uptime",
+        "date",
+        "whoami",
+        "uname",
+        "id",
+        "ps",
+        "top",
+        "git",
+        "wc",
+        "sort",
+        "uniq",
+        "stat",
+    ];
+
+    if !allowed_programs.contains(&program) {
+        return Err(format!(
+            "Command '{}' is not in the safe allowlist.",
+            program
+        ));
+    }
+
+    if program == "git" {
+        if args.is_empty() {
+            return Err("Only safe git subcommands are allowed.".to_string());
+        }
+
+        let allowed_git = ["status", "log", "diff", "branch", "remote", "rev-parse"];
+        if !allowed_git.contains(&args[0].as_str()) {
+            return Err(format!("Blocked git subcommand: git {}", args[0]));
+        }
+    }
+
+    for arg in args {
+        if arg.contains("..") {
+            return Err("Parent directory traversal '..' is blocked.".to_string());
+        }
+
+        if arg.starts_with('-') {
+            let dangerous_flags = ["--exec", "-exec", "--delete", "-delete"];
+            if dangerous_flags.iter().any(|flag| arg == flag) {
+                return Err(format!("Blocked dangerous flag: {}", arg));
+            }
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+fn run_safe_command(
+    command: String,
+    working_dir: Option<String>,
+) -> Result<SafeCommandResult, String> {
+    let command = command.trim().to_string();
+
+    if command.is_empty() {
+        return Err("Command is empty.".to_string());
+    }
+
+    if is_blocked_shell_syntax(&command) {
+        return Err("Shell operators are blocked. Run one safe command at a time.".to_string());
+    }
+
+    let parts = split_shell_words(&command);
+
+    if parts.is_empty() {
+        return Err("Command is empty.".to_string());
+    }
+
+    let program = parts[0].clone();
+    let args = parts[1..].to_vec();
+
+    safe_command_allowed(&program, &args)?;
+
+    let mut cmd = Command::new(&program);
+    cmd.args(&args);
+
+    if let Some(dir) = working_dir {
+        let clean_dir = dir.trim();
+
+        if !clean_dir.is_empty() {
+            let path = PathBuf::from(clean_dir);
+
+            if !path.exists() {
+                return Err(format!("Working directory does not exist: {}", clean_dir));
+            }
+
+            if !path.is_dir() {
+                return Err(format!("Working directory is not a folder: {}", clean_dir));
+            }
+
+            cmd.current_dir(path);
+        }
+    }
+
+    let output = cmd
+        .output()
+        .map_err(|error| format!("Could not run command: {}", error))?;
+
+    Ok(SafeCommandResult {
+        command,
+        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+        status: output.status.code().unwrap_or(-1),
+    })
+}
+
+#[tauri::command]
+fn get_safe_command_allowlist() -> Result<Vec<String>, String> {
+    Ok(vec![
+        "pwd".to_string(),
+        "ls".to_string(),
+        "cat".to_string(),
+        "head".to_string(),
+        "tail".to_string(),
+        "grep".to_string(),
+        "find".to_string(),
+        "df".to_string(),
+        "du".to_string(),
+        "free".to_string(),
+        "uptime".to_string(),
+        "date".to_string(),
+        "whoami".to_string(),
+        "uname".to_string(),
+        "id".to_string(),
+        "ps".to_string(),
+        "top".to_string(),
+        "git status/log/diff/branch/remote/rev-parse".to_string(),
+        "wc".to_string(),
+        "sort".to_string(),
+        "uniq".to_string(),
+        "stat".to_string(),
+    ])
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -1374,6 +1619,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             show_main_window,
+            run_safe_command,
+            get_safe_command_allowlist,
             start_native_audio_recording,
             stop_native_audio_recording,
             get_last_audio_recording,

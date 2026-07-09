@@ -247,3 +247,24 @@ export async function stopNativeAudioRecording(): Promise<string> {
 export async function getLastAudioRecording(): Promise<string | null> {
   return invoke<string | null>("get_last_audio_recording");
 }
+
+export type SafeCommandResult = {
+  command: string;
+  stdout: string;
+  stderr: string;
+  status: number;
+};
+
+export async function runSafeCommand(
+  command: string,
+  workingDir: string | null
+): Promise<SafeCommandResult> {
+  return invoke<SafeCommandResult>("run_safe_command", {
+    command,
+    workingDir,
+  });
+}
+
+export async function getSafeCommandAllowlist(): Promise<string[]> {
+  return invoke<string[]>("get_safe_command_allowlist");
+}
