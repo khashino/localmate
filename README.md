@@ -175,35 +175,6 @@ Build output:
 src-tauri/target/release/bundle
 ```
 
-## Assets Used by README
-
-This README expects these files:
-
-```text
-assets/localmate_ai_assistant_banner.png
-assets/screenshot1.jpg
-assets/screenshot2.jpg
-assets/screenshot3.jpg
-assets/screenshot4.jpg
-assets/screenshot5.jpg
-```
-
-## Privacy
-
-LocalMate is local-first.
-
-Your chats, prompts, indexed file chunks, runtime profiles, recordings, and settings stay on your computer.
-
-LocalMate does not include a model file. You choose and run your own GGUF model locally.
-
-## Notes
-
-- Large `.gguf` model files are not included.
-- Release installers are not stored in Git history.
-- Download installers from GitHub Releases.
-- Windows installer support is planned through GitHub Actions.
-- Automatic voice transcription is not included yet.
-
 ## License
 
 MIT
